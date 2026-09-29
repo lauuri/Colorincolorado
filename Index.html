@@ -1,0 +1,1840 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>CHROMA ROULETTE</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#07090e;
+  color:white;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+body{
+  touch-action:none;
+}
+
+#game{
+  position:relative;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 45%,#202536 0%,#10131d 45%,#06080d 100%);
+}
+
+canvas{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+#hud{
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:76px;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  padding:10px 18px;
+  pointer-events:none;
+}
+
+.brand{
+  font-size:13px;
+  font-weight:900;
+  letter-spacing:3px;
+  color:#e7ebff;
+}
+
+.stats{
+  display:flex;
+  gap:8px;
+}
+
+.pill{
+  min-width:80px;
+  padding:7px 11px;
+  border-radius:12px;
+
+  background:rgba(12,15,24,.86);
+  border:1px solid rgba(255,255,255,.12);
+
+  font-size:9px;
+  letter-spacing:1px;
+  color:#8e98ad;
+}
+
+.pill b{
+  display:block;
+  margin-top:2px;
+
+  font-size:17px;
+  letter-spacing:0;
+  color:white;
+}
+
+#targetBox{
+  position:absolute;
+  left:0;
+  right:0;
+  top:88px;
+  width:100%;
+  text-align:center;
+  z-index:4;
+}
+
+#targetSwatch{
+  width:100%;
+  height:72px;
+  margin:0;
+  border-radius:0;
+  border:0;
+  border-top:1px solid rgba(255,255,255,.32);
+  border-bottom:1px solid rgba(255,255,255,.32);
+  box-shadow:
+    inset 0 0 30px rgba(255,255,255,.10);
+}
+
+#targetLabel{
+  margin-top:5px;
+
+  font-size:8px;
+  font-weight:bold;
+  letter-spacing:2px;
+  color:#788298;
+}
+
+#help{
+  position:absolute;
+  top:154px;
+  left:50%;
+
+  transform:translateX(-50%);
+
+  font-size:9px;
+  font-weight:bold;
+  letter-spacing:1.5px;
+
+  color:#687289;
+
+  white-space:nowrap;
+  pointer-events:none;
+}
+
+#controls{
+  position:absolute;
+  bottom:13px;
+  left:50%;
+
+  transform:translateX(-50%);
+
+  display:flex;
+  gap:9px;
+}
+
+button{
+  min-height:44px;
+
+  padding:10px 17px;
+
+  border-radius:12px;
+
+  border:1px solid rgba(255,255,255,.18);
+
+  background:rgba(17,21,32,.94);
+  color:white;
+
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.5px;
+
+  cursor:pointer;
+}
+
+button:active{
+  transform:scale(.95);
+}
+
+#submit{
+  min-width:125px;
+
+  background:white;
+  color:#07090e;
+
+  border-color:white;
+}
+
+#message{
+  position:absolute;
+  left:50%;
+  top:50%;
+
+  transform:translate(-50%,-50%);
+
+  text-align:center;
+
+  pointer-events:none;
+
+  opacity:0;
+
+  transition:opacity .15s;
+}
+
+#messageBig{
+  font-size:48px;
+  font-weight:1000;
+  letter-spacing:-3px;
+
+  text-shadow:
+    0 5px 30px rgba(0,0,0,.5);
+}
+
+#messageSmall{
+  margin-top:3px;
+
+  font-size:11px;
+  font-weight:bold;
+  letter-spacing:1px;
+
+  color:#c1c8d8;
+}
+
+@media(max-height:430px){
+
+  #hud{
+    height:60px;
+    padding:6px 12px;
+  }
+
+  #targetBox{
+    top:58px;
+  }
+
+  #targetSwatch{
+    height:52px;
+  }
+
+  #help{
+    top:116px;
+  }
+
+  #controls{
+    bottom:7px;
+  }
+}
+
+/* =========================================================
+   EDITOR VISUAL PRIVADO
+========================================================= */
+#creatorGate,
+#editorPanel{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(3,5,10,.78);
+  backdrop-filter:blur(14px);
+}
+#creatorGate.open,
+#editorPanel.open{display:flex;}
+.creatorGateCard,
+#editorPanel{
+  font-family:Arial,Helvetica,sans-serif;
+}
+.creatorGateCard{
+  width:min(330px,88vw);
+  padding:24px;
+  border-radius:18px;
+  background:#111522;
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 20px 70px rgba(0,0,0,.5);
+  text-align:center;
+}
+.creatorGateTitle{
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:2px;
+}
+.creatorGateText{
+  margin:7px 0 16px;
+  font-size:10px;
+  color:#8c95aa;
+  letter-spacing:1px;
+}
+#creatorPassword{
+  width:100%;
+  height:44px;
+  padding:0 12px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.15);
+  background:#080b12;
+  color:#fff;
+  outline:none;
+}
+#creatorUnlock{
+  width:100%;
+  margin-top:10px;
+}
+#creatorError{
+  min-height:15px;
+  margin-top:8px;
+  font-size:10px;
+  color:#ff9b9b;
+}
+#editorPanel{
+  inset:auto;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:min(430px,92vw);
+  max-height:88vh;
+  overflow:auto;
+  padding:16px;
+  display:none;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-start;
+  border-radius:20px;
+  background:rgba(12,16,27,.97);
+  border:1px solid rgba(255,255,255,.15);
+  box-shadow:0 25px 90px rgba(0,0,0,.6);
+}
+#editorPanel.open{display:flex;}
+.editorHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:12px;
+  letter-spacing:1.5px;
+}
+#editorClose{
+  min-height:34px;
+  width:38px;
+  padding:0;
+}
+.editorGrid{
+  display:grid;
+  gap:11px;
+}
+.editorGrid label{
+  display:grid;
+  gap:5px;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.7px;
+  color:#9ca5ba;
+}
+.editorGrid input{width:100%;}
+.editorActions{
+  display:flex;
+  gap:8px;
+  margin-top:15px;
+}
+.editorActions button{flex:1;}
+.editorHint{
+  margin-top:10px;
+  font-size:8px;
+  line-height:1.4;
+  color:#687289;
+  text-align:center;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+<canvas id="canvas"></canvas>
+
+<div id="hud">
+
+  <div class="brand">
+    CHROMA / ROULETTE
+  </div>
+
+  <div id="targetBox">
+    <div id="targetSwatch"></div>
+    <div id="targetLabel">COLOR OBJETIVO</div>
+  </div>
+
+  <div class="stats">
+
+    <div class="pill">
+      PUNTOS
+      <b id="score">0</b>
+    </div>
+
+    <div class="pill">
+      RACHA
+      <b id="streak">0</b>
+    </div>
+
+  </div>
+
+</div>
+
+<div id="help">
+  ARRASTRA SOBRE LOS ANILLOS · TONO / SATURACIÓN / LUMINOSIDAD
+</div>
+
+<div id="message">
+
+  <div id="messageBig">
+    95%
+  </div>
+
+  <div id="messageSmall">
+    CASI PERFECTO
+  </div>
+
+</div>
+
+<div id="controls">
+
+  <button id="random">
+    ↻ CAMBIAR
+  </button>
+
+  <button id="submit">
+    COMPROBAR
+  </button>
+
+</div>
+
+</div>
+
+<!-- EDITOR VISUAL: oculto para jugadores -->
+<div id="creatorGate" aria-hidden="true">
+  <div class="creatorGateCard">
+    <div class="creatorGateTitle">MODO CREADORA</div>
+    <div class="creatorGateText">Acceso privado</div>
+    <input id="creatorPassword" type="password" autocomplete="off" placeholder="Contraseña">
+    <button id="creatorUnlock">ENTRAR</button>
+    <div id="creatorError"></div>
+  </div>
+</div>
+
+<div id="editorPanel" aria-hidden="true">
+  <div class="editorHeader">
+    <b>EDITOR VISUAL</b>
+    <button id="editorClose">×</button>
+  </div>
+  <div class="editorGrid">
+    <label>Centro X <input id="edCenterX" type="range" min=".30" max=".70" step=".005"></label>
+    <label>Centro Y <input id="edCenterY" type="range" min=".40" max=".75" step=".005"></label>
+    <label>Tamaño ruleta <input id="edRadius" type="range" min=".25" max=".48" step=".005"></label>
+    <label>Separación <input id="edSpacing" type="range" min=".55" max=".78" step=".005"></label>
+    <label>Ancho anillos <input id="edWidth" type="range" min=".09" max=".20" step=".005"></label>
+    <label>Color objetivo Y <input id="edTargetTop" type="range" min="55" max="180" step="1"></label>
+    <label>Altura tira objetivo <input id="edTargetHeight" type="range" min="35" max="120" step="1"></label>
+    <label>Tamaño texto centro <input id="edText" type="range" min=".055" max=".11" step=".001"></label>
+  </div>
+  <div class="editorActions">
+    <button id="editorReset">RESTABLECER</button>
+    <button id="editorSave">GUARDAR</button>
+  </div>
+  <div class="editorHint">Los cambios se guardan solo en este dispositivo.</div>
+</div>
+
+<script>
+
+"use strict";
+
+/* =========================================================
+   CANVAS
+========================================================= */
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+const game = document.getElementById("game");
+
+const scoreElement =
+  document.getElementById("score");
+
+const streakElement =
+  document.getElementById("streak");
+
+const targetSwatch =
+  document.getElementById("targetSwatch");
+
+const message =
+  document.getElementById("message");
+
+const messageBig =
+  document.getElementById("messageBig");
+
+const messageSmall =
+  document.getElementById("messageSmall");
+
+let W = 0;
+let H = 0;
+let DPR = 1;
+
+let centerX = 0;
+let centerY = 0;
+let radius = 0;
+
+/* =========================================================
+   CONFIGURACIÓN VISUAL
+========================================================= */
+const layout = {
+  centerX: .50,
+  centerYPortrait: .57,
+  centerYLandscape: .58,
+  radiusWidth: .36,
+  radiusHeight: .31,
+  hueRadius: .91,
+  saturationRadius: .68,
+  lightnessRadius: .43,
+  hueWidth: .155,
+  saturationWidth: .135,
+  lightnessWidth: .135,
+  centerSize: .22,
+  targetTop: 88,
+  targetHeight: 72,
+  targetLabelSize: 8,
+  centerTitleSize: .075,
+  centerValuesSize: .050
+};
+
+let score = 0;
+let streak = 0;
+
+let target = {
+  h:0,
+  s:.5,
+  l:.5
+};
+
+let player = {
+  h:180,
+  s:.7,
+  l:.5
+};
+
+let pulse = 0;
+let resultTimer = null;
+
+
+/* =========================================================
+   UTILIDADES
+========================================================= */
+
+const TAU = Math.PI * 2;
+
+function clamp(value,min,max){
+
+  return Math.max(
+    min,
+    Math.min(max,value)
+  );
+
+}
+
+function random(min,max){
+
+  return min + Math.random() * (max-min);
+
+}
+
+function HSL(h,s,l){
+
+  h = ((h % 360)+360)%360;
+
+  return `
+    hsl(
+      ${h}
+      ${Math.round(s*100)}%
+      ${Math.round(l*100)}%
+    )
+  `;
+
+}
+
+function updateBackground(){
+
+  /* El fondo ES exactamente el color que está creando el jugador. */
+  const color = HSL(
+    player.h,
+    player.s,
+    player.l
+  );
+
+  game.style.background = color;
+}
+
+
+
+/* =========================================================
+   REDIMENSIONAR
+========================================================= */
+
+function resize(){
+
+  const rect =
+    game.getBoundingClientRect();
+
+  W = rect.width;
+  H = rect.height;
+
+  DPR =
+    Math.min(
+      2,
+      window.devicePixelRatio || 1
+    );
+
+  canvas.width =
+    Math.round(W * DPR);
+
+  canvas.height =
+    Math.round(H * DPR);
+
+  ctx.setTransform(
+    DPR,
+    0,
+    0,
+    DPR,
+    0,
+    0
+  );
+
+  centerX = W * layout.centerX;
+
+  // Se adapta a móviles verticales, tablets y pantallas apaisadas.
+  centerY = H < W ? H * layout.centerYLandscape : H * layout.centerYPortrait;
+
+  radius =
+    Math.min(
+      W * layout.radiusWidth,
+      H * layout.radiusHeight
+    );
+
+  radius = Math.max(92, radius);
+
+}
+
+
+/* =========================================================
+   NUEVO COLOR
+========================================================= */
+
+function newTarget(){
+
+  target.h =
+    Math.floor(
+      random(0,360)
+    );
+
+  target.s =
+    random(.30,.95);
+
+  target.l =
+    random(.25,.75);
+
+  /*
+    Color inicial aleatorio del jugador.
+  */
+
+  player.h =
+    random(0,360);
+
+  player.s =
+    random(.3,.95);
+
+  player.l =
+    random(.25,.75);
+
+  targetSwatch.style.background =
+    HSL(
+      target.h,
+      target.s,
+      target.l
+    );
+
+  targetSwatch.style.height =
+    layout.targetHeight + "px";
+  document.getElementById("targetBox").style.top =
+    layout.targetTop + "px";
+
+  updateBackground();
+
+  pulse = 1;
+
+}
+
+
+/* =========================================================
+   DECORACIÓN
+========================================================= */
+
+function drawDecor(){
+
+  /*
+    Círculo exterior.
+  */
+
+  ctx.beginPath();
+
+  ctx.arc(
+    centerX,
+    centerY,
+    radius * 1.08,
+    0,
+    TAU
+  );
+
+  ctx.strokeStyle =
+    "rgba(255,255,255,.07)";
+
+  ctx.lineWidth = 1;
+
+  ctx.stroke();
+
+
+  /*
+    Marcas alrededor de la ruleta.
+  */
+
+  for(let i=0;i<72;i++){
+
+    const angle =
+      i / 72 * TAU;
+
+    const r =
+      radius * 1.12;
+
+    const inner =
+      i % 3 === 0
+        ? radius * 1.075
+        : radius * 1.095;
+
+    const x1 =
+      centerX +
+      Math.cos(angle) * inner;
+
+    const y1 =
+      centerY +
+      Math.sin(angle) * inner;
+
+    const x2 =
+      centerX +
+      Math.cos(angle) * r;
+
+    const y2 =
+      centerY +
+      Math.sin(angle) * r;
+
+    ctx.beginPath();
+
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+
+    ctx.strokeStyle =
+      i % 3 === 0
+        ? "rgba(255,255,255,.18)"
+        : "rgba(255,255,255,.06)";
+
+    ctx.lineWidth =
+      i % 3 === 0 ? 1.5 : 1;
+
+    ctx.stroke();
+
+  }
+
+}
+
+
+/* =========================================================
+   ANILLO DE TONO
+========================================================= */
+
+function drawHueRing(){
+
+  const r =
+    radius * layout.hueRadius;
+
+  const width =
+    Math.max(
+      20,
+      radius * layout.hueWidth
+    );
+
+
+  const gradient =
+    ctx.createConicGradient(
+      -Math.PI/2,
+      centerX,
+      centerY
+    );
+
+
+  for(let i=0;i<=360;i+=10){
+
+    gradient.addColorStop(
+      i/360,
+      `hsl(${i} 95% 55%)`
+    );
+
+  }
+
+
+  ctx.beginPath();
+
+  ctx.arc(
+    centerX,
+    centerY,
+    r,
+    -Math.PI/2,
+    Math.PI*1.5
+  );
+
+  ctx.lineWidth = width;
+
+  ctx.strokeStyle =
+    gradient;
+
+  ctx.stroke();
+
+
+  /*
+    Marcador del tono.
+  */
+
+  const angle =
+    player.h / 360 * TAU -
+    Math.PI/2;
+
+  const x =
+    centerX +
+    Math.cos(angle) * r;
+
+  const y =
+    centerY +
+    Math.sin(angle) * r;
+
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x,
+    y,
+    width*.48,
+    0,
+    TAU
+  );
+
+  ctx.fillStyle = "white";
+
+  ctx.fill();
+
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x,
+    y,
+    width*.29,
+    0,
+    TAU
+  );
+
+  ctx.fillStyle = HSL(player.h, player.s, player.l);
+
+  ctx.fill();
+
+}
+
+
+/* =========================================================
+   ANILLO DE SATURACIÓN
+========================================================= */
+
+function drawSaturationRing(){
+
+  const r =
+    radius * layout.saturationRadius;
+
+  const width =
+    Math.max(
+      17,
+      radius * layout.saturationWidth
+    );
+
+
+  for(let i=0;i<180;i++){
+
+    const angle =
+      -Math.PI/2 +
+      i/180 * TAU;
+
+    const saturation =
+      i/179;
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+      centerX,
+      centerY,
+      r,
+      angle,
+      angle + TAU/180 + .015
+    );
+
+    ctx.lineWidth =
+      width;
+
+    ctx.strokeStyle =
+      HSL(
+        player.h,
+        saturation,
+        .5
+      );
+
+    ctx.stroke();
+
+  }
+
+
+  /*
+    Selector.
+  */
+
+  const angle =
+    player.s * TAU -
+    Math.PI/2;
+
+  const x =
+    centerX +
+    Math.cos(angle) * r;
+
+  const y =
+    centerY +
+    Math.sin(angle) * r;
+
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x,
+    y,
+    width*.45,
+    0,
+    TAU
+  );
+
+  ctx.fillStyle =
+    "white";
+
+  ctx.fill();
+
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x,
+    y,
+    width*.27,
+    0,
+    TAU
+  );
+
+  ctx.fillStyle = HSL(player.h, player.s, player.l);
+
+  ctx.fill();
+
+}
+
+
+/* =========================================================
+   ANILLO DE LUMINOSIDAD
+========================================================= */
+
+function drawLightRing(){
+
+  const r =
+    radius * layout.lightnessRadius;
+
+  const width =
+    Math.max(
+      17,
+      radius * layout.saturationWidth
+    );
+
+
+  for(let i=0;i<120;i++){
+
+    const angle =
+      -Math.PI/2 +
+      i/120 * TAU;
+
+    const light =
+      i/119;
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+      centerX,
+      centerY,
+      r,
+      angle,
+      angle + TAU/120 + .015
+    );
+
+    ctx.lineWidth =
+      width;
+
+    ctx.strokeStyle =
+      HSL(
+        player.h,
+        player.s,
+        light
+      );
+
+    ctx.stroke();
+
+  }
+
+
+  const angle =
+    player.l * TAU -
+    Math.PI/2;
+
+  const x =
+    centerX +
+    Math.cos(angle) * r;
+
+  const y =
+    centerY +
+    Math.sin(angle) * r;
+
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x,
+    y,
+    width*.46,
+    0,
+    TAU
+  );
+
+  ctx.fillStyle =
+    "white";
+
+  ctx.fill();
+
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x,
+    y,
+    width*.28,
+    0,
+    TAU
+  );
+
+  ctx.fillStyle =
+    HSL(
+      player.h,
+      player.s,
+      player.l
+    );
+
+  ctx.fill();
+
+}
+
+
+/* =========================================================
+   CENTRO
+========================================================= */
+
+function drawCenter(){
+
+  const color =
+    HSL(
+      player.h,
+      player.s,
+      player.l
+    );
+
+
+  /*
+    Halo.
+  */
+
+  const gradient =
+    ctx.createRadialGradient(
+      centerX,
+      centerY,
+      0,
+      centerX,
+      centerY,
+      radius*.32
+    );
+
+  gradient.addColorStop(
+    0,
+    "rgba(255,255,255,.18)"
+  );
+
+  gradient.addColorStop(
+    .45,
+    "rgba(255,255,255,.04)"
+  );
+
+  gradient.addColorStop(
+    1,
+    "rgba(0,0,0,.65)"
+  );
+
+
+  ctx.beginPath();
+
+  ctx.arc(
+    centerX,
+    centerY,
+    radius*.29,
+    0,
+    TAU
+  );
+
+  ctx.fillStyle =
+    gradient;
+
+  ctx.fill();
+
+
+  /*
+    Color actual.
+  */
+
+  ctx.beginPath();
+
+  ctx.arc(
+    centerX,
+    centerY,
+    radius*layout.centerSize,
+    0,
+    TAU
+  );
+
+  ctx.fillStyle =
+    color;
+
+  ctx.fill();
+
+
+  ctx.strokeStyle =
+    "rgba(255,255,255,.75)";
+
+  ctx.lineWidth = 2;
+
+  ctx.stroke();
+
+
+  /*
+    Texto.
+  */
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  ctx.font =
+    `900 ${Math.max(13,radius*layout.centerTitleSize)}px Arial`;
+
+  ctx.fillStyle =
+    "rgba(255,255,255,.9)";
+
+  ctx.fillText(
+    "TU COLOR",
+    centerX,
+    centerY - radius*layout.centerTitleSize
+  );
+
+
+  ctx.font =
+    `700 ${Math.max(10,radius*layout.centerValuesSize)}px Arial`;
+
+  ctx.fillStyle =
+    "rgba(255,255,255,.8)";
+
+  ctx.fillText(
+    `${Math.round(player.h)}°  •  ${Math.round(player.s*100)}%  •  ${Math.round(player.l*100)}%`,
+    centerX,
+    centerY + radius*layout.centerTitleSize
+  );
+
+}
+
+
+/* =========================================================
+   TEXTO DE LOS ANILLOS
+========================================================= */
+
+function drawLabels(){
+
+  ctx.textAlign = "center";
+
+  ctx.font =
+    "900 9px Arial";
+
+  ctx.fillStyle =
+    "rgba(255,255,255,.35)";
+
+  ctx.fillText(
+    "H",
+    centerX,
+    centerY-radius*1.02
+  );
+
+  ctx.fillText(
+    "S",
+    centerX,
+    centerY-radius*.73
+  );
+
+  ctx.fillText(
+    "L",
+    centerX,
+    centerY-radius*.48
+  );
+
+}
+
+
+/* =========================================================
+   ANIMACIÓN
+========================================================= */
+
+function draw(){
+
+  ctx.clearRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+
+  drawDecor();
+
+  drawHueRing();
+
+  drawSaturationRing();
+
+  drawLightRing();
+
+  drawCenter();
+
+  drawLabels();
+
+
+  /*
+    Pulso al cambiar de color.
+  */
+
+  if(pulse > 0){
+
+    ctx.beginPath();
+
+    ctx.arc(
+      centerX,
+      centerY,
+      radius *
+      (1.08 + pulse*.12),
+      0,
+      TAU
+    );
+
+    ctx.strokeStyle =
+      `rgba(255,255,255,${pulse*.12})`;
+
+    ctx.lineWidth = 2;
+
+    ctx.stroke();
+
+    pulse *= .94;
+
+  }
+
+
+  requestAnimationFrame(draw);
+
+}
+
+
+/* =========================================================
+   DETECTAR ANILLO
+========================================================= */
+
+function getPointerPosition(event){
+
+  const rect =
+    canvas.getBoundingClientRect();
+
+  return {
+
+    x:event.clientX - rect.left,
+
+    y:event.clientY - rect.top
+
+  };
+
+}
+
+
+function updateColor(x,y){
+
+  const dx =
+    x-centerX;
+
+  const dy =
+    y-centerY;
+
+  const distance =
+    Math.hypot(dx,dy);
+
+  let angle =
+    Math.atan2(dy,dx);
+
+  angle =
+    (angle + TAU) % TAU;
+
+
+  /*
+    Anillo exterior = TONO
+  */
+
+  if(
+    distance >
+    radius*.835 &&
+    distance <
+    radius*1.015
+  ){
+
+    player.h =
+      ((angle + Math.PI/2 + TAU)
+      % TAU)
+      /TAU
+      *360;
+
+    updateBackground();
+    return;
+
+  }
+
+
+  /*
+    Anillo medio = SATURACIÓN
+  */
+
+  if(
+    distance >
+    radius*.605 &&
+    distance <
+    radius*.745
+  ){
+
+    player.s =
+      clamp(
+        ((angle + Math.PI/2 + TAU)
+        % TAU)/TAU,
+        0,
+        1
+      );
+
+    updateBackground();
+    return;
+
+  }
+
+
+  /*
+    Anillo interior = LUMINOSIDAD
+  */
+
+  if(
+    distance >
+    radius*.365 &&
+    distance <
+    radius*.495
+  ){
+
+    player.l =
+      clamp(
+        ((angle + Math.PI/2 + TAU)
+        % TAU)/TAU,
+        0,
+        1
+      );
+
+  }
+
+  updateBackground();
+
+}
+
+
+/* =========================================================
+   CONTROL TÁCTIL
+========================================================= */
+
+canvas.addEventListener(
+  "pointerdown",
+  event => {
+
+    event.preventDefault();
+
+    canvas.setPointerCapture(
+      event.pointerId
+    );
+
+    const p =
+      getPointerPosition(event);
+
+    updateColor(
+      p.x,
+      p.y
+    );
+
+  }
+);
+
+
+canvas.addEventListener(
+  "pointermove",
+  event => {
+
+    if(
+      event.buttons === 0
+    ){
+      return;
+    }
+
+    event.preventDefault();
+
+    const p =
+      getPointerPosition(event);
+
+    updateColor(
+      p.x,
+      p.y
+    );
+
+  }
+);
+
+
+canvas.addEventListener(
+  "pointerup",
+  event => {
+
+    try{
+
+      canvas.releasePointerCapture(
+        event.pointerId
+      );
+
+    }catch(e){}
+
+  }
+);
+
+
+/* =========================================================
+   DISTANCIA DEL COLOR
+========================================================= */
+
+function calculateAccuracy(){
+
+  /*
+    Diferencia circular del tono.
+  */
+
+  let hueDifference =
+    Math.abs(
+      player.h-target.h
+    );
+
+  hueDifference =
+    Math.min(
+      hueDifference,
+      360-hueDifference
+    );
+
+  /*
+    Convertimos a 0-1.
+  */
+
+  const hue =
+    hueDifference/180;
+
+  const saturation =
+    Math.abs(
+      player.s-target.s
+    );
+
+  const lightness =
+    Math.abs(
+      player.l-target.l
+    );
+
+
+  /*
+    El tono pesa un poco más.
+  */
+
+  const distance =
+    Math.sqrt(
+      hue*hue*.52 +
+      saturation*saturation*.24 +
+      lightness*lightness*.24
+    );
+
+
+  return clamp(
+    1-distance,
+    0,
+    1
+  );
+
+}
+
+
+/* =========================================================
+   COMPROBAR
+========================================================= */
+
+function submit(){
+
+  const accuracy =
+    calculateAccuracy();
+
+  const percentage =
+    Math.round(
+      accuracy*100
+    );
+
+
+  /*
+    Puntuación exponencial:
+    cuanto más cerca,
+    más recompensa.
+  */
+
+  let gained =
+    Math.round(
+      Math.pow(
+        accuracy,
+        2.2
+      ) * 1000
+    );
+
+
+  if(percentage >= 92){
+
+    streak++;
+
+    gained +=
+      streak*75;
+
+  }
+  else if(
+    percentage < 60
+  ){
+
+    streak = 0;
+
+  }
+
+
+  score += gained;
+
+
+  scoreElement.textContent =
+    score;
+
+  streakElement.textContent =
+    streak;
+
+
+  /*
+    Resultado.
+  */
+
+  messageBig.textContent =
+    percentage+"%";
+
+
+  if(percentage >= 97){
+
+    messageSmall.textContent =
+      "PERFECTO · COLOR CLAVADO";
+
+  }
+  else if(percentage >= 92){
+
+    messageSmall.textContent =
+      "EXCELENTE · CASI IDÉNTICO";
+
+  }
+  else if(percentage >= 82){
+
+    messageSmall.textContent =
+      "MUY CERCA · BUEN OJO";
+
+  }
+  else if(percentage >= 70){
+
+    messageSmall.textContent =
+      "BIEN · SIGUE AFINANDO";
+
+  }
+  else if(percentage >= 55){
+
+    messageSmall.textContent =
+      "REGULAR · AJUSTA LOS ANILLOS";
+
+  }
+  else{
+
+    messageSmall.textContent =
+      "LEJOS · PRUEBA OTRO COLOR";
+
+  }
+
+
+  message.style.opacity =
+    "1";
+
+
+  clearTimeout(
+    resultTimer
+  );
+
+
+  resultTimer =
+    setTimeout(
+      () => {
+
+        message.style.opacity =
+          "0";
+
+        newTarget();
+
+      },
+      1200
+    );
+
+}
+
+
+/* =========================================================
+   CAMBIAR COLOR
+========================================================= */
+
+document
+  .getElementById("random")
+  .addEventListener(
+    "click",
+    () => {
+
+      message.style.opacity =
+        "0";
+
+      newTarget();
+
+    }
+  );
+
+
+document
+  .getElementById("submit")
+  .addEventListener(
+    "click",
+    submit
+  );
+
+
+
+/* =========================================================
+   MODO CREADORA — ACCESO PRIVADO
+   Clave de acceso del archivo: 4bb073150eda3739606600f0
+========================================================= */
+const CREATOR_KEY = "4bb073150eda3739606600f0";
+const CREATOR_STORAGE = "chroma_creator_layout_v1";
+
+function openCreatorGate(){
+  document.getElementById("creatorGate").classList.add("open");
+  document.getElementById("creatorGate").setAttribute("aria-hidden","false");
+  document.getElementById("creatorPassword").focus();
+}
+
+function closeCreatorGate(){
+  document.getElementById("creatorGate").classList.remove("open");
+  document.getElementById("creatorGate").setAttribute("aria-hidden","true");
+}
+
+function openEditor(){
+  closeCreatorGate();
+  syncEditorInputs();
+  document.getElementById("editorPanel").classList.add("open");
+  document.getElementById("editorPanel").setAttribute("aria-hidden","false");
+}
+
+function closeEditor(){
+  document.getElementById("editorPanel").classList.remove("open");
+  document.getElementById("editorPanel").setAttribute("aria-hidden","true");
+}
+
+function syncEditorInputs(){
+  edCenterX.value = layout.centerX;
+  edCenterY.value = H < W ? layout.centerYLandscape : layout.centerYPortrait;
+  edRadius.value = layout.radiusWidth;
+  edSpacing.value = layout.saturationRadius;
+  edWidth.value = layout.hueWidth;
+  edTargetTop.value = layout.targetTop;
+  edTargetHeight.value = layout.targetHeight;
+  edText.value = layout.centerTitleSize;
+}
+
+function applyEditorInputs(){
+  layout.centerX = Number(edCenterX.value);
+  layout.centerYPortrait = Number(edCenterY.value);
+  layout.centerYLandscape = Number(edCenterY.value);
+  layout.radiusWidth = Number(edRadius.value);
+  layout.radiusHeight = Number(edRadius.value) * .86;
+  layout.hueRadius = .91;
+  layout.saturationRadius = Number(edSpacing.value);
+  layout.lightnessRadius = Math.max(.43, Number(edSpacing.value) - .25);
+  layout.hueWidth = Number(edWidth.value);
+  layout.saturationWidth = Number(edWidth.value) * .87;
+  layout.lightnessWidth = Number(edWidth.value) * .87;
+  layout.targetTop = Number(edTargetTop.value);
+  layout.targetHeight = Number(edTargetHeight.value);
+  layout.centerTitleSize = Number(edText.value);
+  layout.centerValuesSize = Math.max(.042, Number(edText.value) * .66);
+
+  document.getElementById("targetBox").style.top = layout.targetTop + "px";
+  document.getElementById("targetSwatch").style.height = layout.targetHeight + "px";
+  resize();
+}
+
+function saveEditor(){
+  localStorage.setItem(CREATOR_STORAGE, JSON.stringify(layout));
+}
+
+function loadEditor(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(CREATOR_STORAGE) || "null");
+    if(saved && typeof saved === "object"){
+      Object.assign(layout, saved);
+    }
+  }catch(e){}
+}
+
+const edCenterX = document.getElementById("edCenterX");
+const edCenterY = document.getElementById("edCenterY");
+const edRadius = document.getElementById("edRadius");
+const edSpacing = document.getElementById("edSpacing");
+const edWidth = document.getElementById("edWidth");
+const edTargetTop = document.getElementById("edTargetTop");
+const edTargetHeight = document.getElementById("edTargetHeight");
+const edText = document.getElementById("edText");
+
+[
+  edCenterX,edCenterY,edRadius,edSpacing,
+  edWidth,edTargetTop,edTargetHeight,edText
+].forEach(el => el.addEventListener("input", applyEditorInputs));
+
+document.getElementById("creatorUnlock").addEventListener("click", () => {
+  const entered = document.getElementById("creatorPassword").value.trim();
+  const error = document.getElementById("creatorError");
+
+  if(entered === CREATOR_KEY){
+    error.textContent = "";
+    openEditor();
+  }else{
+    error.textContent = "Contraseña incorrecta";
+  }
+});
+
+document.getElementById("creatorPassword").addEventListener("keydown", e => {
+  if(e.key === "Enter") document.getElementById("creatorUnlock").click();
+});
+
+document.getElementById("editorClose").addEventListener("click", closeEditor);
+document.getElementById("editorSave").addEventListener("click", () => {
+  saveEditor();
+  closeEditor();
+});
+document.getElementById("editorReset").addEventListener("click", () => {
+  localStorage.removeItem(CREATOR_STORAGE);
+  location.reload();
+});
+
+/* Activación deliberadamente discreta: tocar el título 5 veces. */
+let creatorTapCount = 0;
+let creatorTapTimer = null;
+document.querySelector(".brand").addEventListener("click", () => {
+  creatorTapCount++;
+  clearTimeout(creatorTapTimer);
+  creatorTapTimer = setTimeout(() => creatorTapCount = 0, 1100);
+  if(creatorTapCount >= 5){
+    creatorTapCount = 0;
+    openCreatorGate();
+  }
+});
+
+loadEditor();
+
+
+/* =========================================================
+   INICIALIZACIÓN
+========================================================= */
+
+window.addEventListener(
+  "resize",
+  resize
+);
+
+resize();
+
+document.getElementById("targetBox").style.top = layout.targetTop + "px";
+document.getElementById("targetSwatch").style.height = layout.targetHeight + "px";
+
+newTarget();
+
+draw();
+
+</script>
+
+</body>
+</html>
